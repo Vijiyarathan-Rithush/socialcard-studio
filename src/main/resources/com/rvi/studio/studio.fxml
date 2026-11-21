@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.rvi.studio.StudioController" stylesheets="@theme.css">
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="14" styleClass="masthead">
+            <padding><Insets top="19" right="30" bottom="19" left="30"/></padding>
+            <StackPane styleClass="brand-mark"><Label text="SC"/></StackPane>
+            <Label text="SocialCard Studio" styleClass="wordmark"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="NFC / NTAG215" styleClass="device-label"/>
+        </HBox>
+    </top>
+    <center>
+        <HBox spacing="24" fillHeight="true">
+            <padding><Insets top="28" right="30" bottom="28" left="30"/></padding>
+            <VBox spacing="14" HBox.hgrow="ALWAYS">
+                <VBox spacing="3">
+                    <Label text="Karteninhalt" styleClass="page-title"/>
+                    <Label text="NDEF-Einträge für deinen NFC-Tag zusammenstellen."
+                           styleClass="muted" wrapText="true"/>
+                </VBox>
+                <HBox spacing="9" alignment="CENTER_LEFT">
+                    <ComboBox fx:id="recordType" accessibleText="Eintragstyp" prefWidth="146"/>
+                    <Button fx:id="addButton" text="Hinzufügen" onAction="#addRecord"/>
+                </HBox>
+                <ListView fx:id="records" accessibleText="NDEF-Einträge" VBox.vgrow="ALWAYS"/>
+                <HBox spacing="8">
+                    <Button fx:id="editButton" text="Bearbeiten" onAction="#editRecord"/>
+                    <Button fx:id="removeButton" text="Entfernen" onAction="#removeRecord"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="entryCount" alignment="CENTER_RIGHT" styleClass="muted"/>
+                </HBox>
+            </VBox>
+            <VBox spacing="18" prefWidth="292" minWidth="260" maxWidth="320">
+                <VBox spacing="11" styleClass="panel">
+                    <Label text="NFC-Leser" styleClass="panel-title"/>
+                    <ComboBox fx:id="readers" maxWidth="Infinity" promptText="Leser auswählen"
+                              accessibleText="NFC-Leser"/>
+                    <Label fx:id="readerStatus" wrapText="true" styleClass="muted"/>
+                    <Button fx:id="refreshButton" text="Leser suchen" onAction="#refreshReaders"/>
+                </VBox>
+                <VBox spacing="11" styleClass="panel">
+                    <Label text="Tag-Speicher" styleClass="panel-title"/>
+                    <Label fx:id="byteCount" styleClass="storage-count"/>
+                    <ProgressBar fx:id="capacityBar" maxWidth="Infinity"
+                                 accessibleText="Belegter Tag-Speicher"/>
+                    <Label text="Inklusive TLV-Hülle. 496 Bytes sind der typische NTAG215-Richtwert."
+                           wrapText="true" styleClass="muted"/>
+                </VBox>
+                <Region VBox.vgrow="ALWAYS"/>
+                <Button fx:id="readButton" text="Tag lesen" maxWidth="Infinity" onAction="#readTag"/>
+                <Button fx:id="writeButton" text="Auf Tag schreiben" maxWidth="Infinity"
+                        onAction="#writeTag" styleClass="button, primary-action"/>
+            </VBox>
+        </HBox>
+    </center>
+    <bottom>
+        <HBox alignment="CENTER_LEFT" styleClass="statusbar">
+            <Label fx:id="status" wrapText="true"/>
+        </HBox>
+    </bottom>
+</BorderPane>

@@ -1,0 +1,185 @@
+.root {
+    -studio-cream: #faf0de;
+    -studio-teal: #0b4a46;
+    -studio-orange: #ff9c57;
+    -studio-ink: #173e39;
+    -studio-muted: #47635b;
+    -studio-paper: #fffaf1;
+    -studio-border: #d8d6c4;
+    -studio-soft-teal: #e4ebe0;
+    -studio-error: #973b2c;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 14px;
+    -fx-background-color: -studio-cream;
+    -fx-accent: -studio-teal;
+    -fx-focus-color: -studio-teal;
+    -fx-faint-focus-color: transparent;
+    -fx-text-background-color: -studio-ink;
+}
+
+.label, .check-box {
+    -fx-text-fill: -studio-ink;
+}
+
+.masthead {
+    -fx-background-color: -studio-teal;
+}
+
+.brand-mark {
+    -fx-min-width: 38px;
+    -fx-min-height: 38px;
+    -fx-background-radius: 10px;
+    -fx-background-color: #21625b;
+}
+
+.brand-mark .label, .wordmark, .device-label {
+    -fx-text-fill: -studio-cream;
+}
+
+.brand-mark .label, .wordmark {
+    -fx-font-weight: bold;
+}
+
+.wordmark {
+    -fx-font-size: 19px;
+}
+
+.device-label, .record-type, .muted {
+    -fx-font-size: 13px;
+}
+
+.page-title {
+    -fx-font-family: Georgia;
+    -fx-font-size: 38px;
+    -fx-text-fill: -studio-teal;
+}
+
+.muted, .record-type, .statusbar .label {
+    -fx-text-fill: -studio-muted;
+}
+
+.panel, .list-view {
+    -fx-background-color: -studio-paper;
+    -fx-background-radius: 13px;
+    -fx-border-color: -studio-border;
+    -fx-border-radius: 13px;
+}
+
+.panel {
+    -fx-padding: 17px;
+}
+
+.panel-title, .record-detail, .storage-count {
+    -fx-font-weight: bold;
+}
+
+.panel-title {
+    -fx-font-size: 17px;
+}
+
+.storage-count {
+    -fx-font-size: 25px;
+}
+
+.button, .combo-box-base, .text-input {
+    -fx-background-color: -studio-paper;
+    -fx-background-radius: 8px;
+    -fx-border-color: -studio-border;
+    -fx-border-radius: 8px;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: -studio-ink;
+}
+
+.text-area .content {
+    -fx-background-color: -studio-paper;
+}
+
+.button {
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.button:hover, .combo-box-base:hover {
+    -fx-background-color: -studio-soft-teal;
+}
+
+.button:focused, .combo-box-base:focused, .text-input:focused, .list-view:focused {
+    -fx-border-color: -studio-teal;
+}
+
+.button.primary-action {
+    -fx-background-color: -studio-orange;
+    -fx-border-color: transparent;
+    -fx-text-fill: -studio-ink;
+}
+
+.button.primary-action:hover {
+    -fx-background-color: #ffab70;
+}
+
+.button.primary-action:focused {
+    -fx-border-color: -studio-teal;
+}
+
+.button.primary-action:disabled {
+    -fx-background-color: #f7d7b5;
+    -fx-text-fill: #695647;
+    -fx-opacity: 1;
+}
+
+.list-view {
+    -fx-padding: 8px;
+}
+
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-background-radius: 7px;
+    -fx-padding: 10px;
+}
+
+.list-view .list-cell:filled:selected, .list-view .list-cell:filled:hover {
+    -fx-background-color: -studio-soft-teal;
+}
+
+.progress-bar {
+    -fx-pref-height: 10px;
+}
+
+.progress-bar .track {
+    -fx-background-color: -studio-soft-teal;
+    -fx-background-radius: 5px;
+}
+
+.progress-bar .bar {
+    -fx-background-color: -studio-teal;
+    -fx-background-radius: 5px;
+    -fx-background-insets: 0;
+}
+
+.progress-bar:over-capacity .bar {
+    -fx-background-color: -studio-error;
+}
+
+.error-text {
+    -fx-text-fill: -studio-error;
+}
+
+.statusbar {
+    -fx-padding: 11px 30px;
+    -fx-background-color: -studio-paper;
+    -fx-border-width: 1px 0 0 0;
+    -fx-border-color: -studio-border;
+    -fx-min-height: 43px;
+}
+
+.dialog-pane, .dialog-pane .scroll-pane, .dialog-pane .scroll-pane .viewport {
+    -fx-background-color: -studio-cream;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: -studio-teal;
+}
+
+.dialog-pane .header-panel .label {
+    -fx-text-fill: -studio-cream;
+}
