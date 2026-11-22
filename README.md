@@ -1,59 +1,60 @@
+<div align="center">
+
 # SocialCard Studio
 
-A JavaFX desktop app for composing, reading, and writing NDEF messages on NTAG215 tags.
-It uses [SocialCard 1.0.3](https://central.sonatype.com/artifact/io.github.vijiyarathan-rithush/socialcard/1.0.3)
-for NDEF encoding, PC/SC reader access, and write verification.
+A JavaFX desktop app for composing, reading and writing NFC tags with [SocialCard](https://github.com/Vijiyarathan-Rithush/socialcard).
 
-## Run on Windows
+![Java 25](https://img.shields.io/badge/Java-25-111111?style=for-the-badge)
+[![Windows x64](https://img.shields.io/badge/Windows-x64-ff743d?style=for-the-badge)](https://github.com/Vijiyarathan-Rithush/socialcard-studio/releases)
+[![SocialCard 1.0.3](https://img.shields.io/badge/SocialCard-1.0.3-111111?style=for-the-badge)](https://central.sonatype.com/artifact/io.github.vijiyarathan-rithush/socialcard/1.0.3)
+[![Verify workflow](https://img.shields.io/github/actions/workflow/status/Vijiyarathan-Rithush/socialcard-studio/verify.yml?branch=main&style=for-the-badge&label=Verify)](https://github.com/Vijiyarathan-Rithush/socialcard-studio/actions/workflows/verify.yml)
 
-From a GitHub release, download `socialcard-studio-windows-x64.zip`, extract it
-and open `SocialCard Studio.exe` inside the `SocialCard Studio` folder. Keep
-the entire folder together. The package includes its Java runtime.
+</div>
 
-For NFC operations, connect a PC/SC-compatible reader and use an NTAG215 tag.
+## App preview
 
-## Run from source
+![SocialCard Studio showing two NDEF records, the selected NFC reader, storage usage and the orange Write to tag button](docs/media/socialcard-studio.png)
 
-Install JDK 25 and Maven. If Maven uses a different JDK, set `JAVA_HOME` to
-your JDK 25 directory and check it with `mvn -version`.
+## What it does
+
+- Combine links, text, contacts and Wi-Fi credentials in one NDEF message.
+- Preview how much space your draft uses before connecting a reader.
+- Read supported records from an NTAG215 tag and load them into the editor.
+- Confirm before overwriting a tag and verify the write by reading it back.
+
+## Installation
+
+### Windows x64
+
+Download `socialcard-studio-windows-x64.zip` from [GitHub Releases](https://github.com/Vijiyarathan-Rithush/socialcard-studio/releases), extract it and open `SocialCard Studio.exe` in the extracted `SocialCard Studio` folder. Keep the folder together so the launcher can find the bundled Java runtime.
+
+### Run from source
+
+Install JDK 25 and Maven. If Maven uses a different JDK, set `JAVA_HOME` to your JDK 25 directory and check it with `mvn -version`.
 
 ```sh
 mvn javafx:run
 ```
 
-## Build a Windows executable
+## Quick start
 
-Build the portable application on x64 Windows with JDK 25 and Maven.
+1. Add a record and check the size under **Tag storage**. Shorten the draft if it exceeds the 496-byte limit shown by the editor.
+2. Connect a PC/SC-compatible NFC reader with its driver installed, then click **Scan for readers**.
+3. Place a writable NTAG215 tag on the reader. Click **Write to tag** and confirm. Your reader must support reading the tag's UID for writes.
+4. Scan the tag with your phone or click **Read tag** to load its supported records back into the editor.
+
+Drafts are kept in memory. Anyone who scans a tag can read any Wi-Fi credentials stored on it.
+
+## Build and verify
+
+Run the tests with `mvn verify`. On x64 Windows, build the portable app with:
 
 ```powershell
 mvn -Pwindows-exe clean package
 ```
 
-Open `target/SocialCard Studio/SocialCard Studio.exe` to start the app.
-
-Share the entire `SocialCard Studio` folder so the launcher can find the bundled
-Java runtime and dependencies. Recipients can run it without installing Java
-or Maven. The build creates a portable application folder and works without WiX.
-
-## Verify
-
-Run `mvn verify` to compile the application and run its tests. GitHub Actions
-verifies the build on Linux and Windows and provides the Windows ZIP as a
-workflow artifact.
-
-## Prepare a tag
-
-1. Choose a record type and add links, text, contacts, or Wi-Fi credentials.
-2. Check the size under **Tag storage**. The size preview works without a reader.
-   Shorten the draft if it exceeds 496 bytes to enable writing.
-3. Connect a PC/SC NFC reader, click **Scan for readers**, and place a writable NTAG215 tag on it.
-4. Click **Write to tag** and confirm. **Read tag** loads supported records into the editor.
-
-The editor keeps drafts in memory and asks before discarding changes. Anyone who
-scans a tag can read its Wi-Fi credentials. The NFC reader requires a
-PC/SC-compatible driver and must support reading the NTAG215 UID for writes.
+The launcher is at `target/SocialCard Studio/SocialCard Studio.exe`. The portable build does not require WiX. The [Verify workflow](https://github.com/Vijiyarathan-Rithush/socialcard-studio/actions/workflows/verify.yml) checks Linux and Windows builds and uploads the portable Windows ZIP.
 
 ## Layout and colors
 
-Open `studio.fxml` in Scene Builder to edit the layout. Change the palette in
-`theme.css`. Warm charcoal surfaces sit on a black background. Orange highlights the write button and keyboard focus.
+The layout lives in [`studio.fxml`](src/main/resources/com/rvi/studio/studio.fxml) and can be edited in Scene Builder. The charcoal surfaces and orange accents are defined in [`theme.css`](src/main/resources/com/rvi/studio/theme.css).
