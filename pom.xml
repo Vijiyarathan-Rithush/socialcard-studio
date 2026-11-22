@@ -169,6 +169,8 @@
                                         <argument>${windows.app.input}</argument>
                                         <argument>--dest</argument>
                                         <argument>${windows.app.output}</argument>
+                                        <argument>--icon</argument>
+                                        <argument>${project.basedir}/src/main/packaging/windows/socialcard-studio.ico</argument>
                                         <argument>--main-jar</argument>
                                         <argument>${project.build.finalName}.jar</argument>
                                         <argument>--main-class</argument>

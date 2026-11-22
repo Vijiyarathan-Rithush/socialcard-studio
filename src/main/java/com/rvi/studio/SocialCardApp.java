@@ -3,6 +3,7 @@ package com.rvi.studio;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.util.Locale;
@@ -20,6 +21,7 @@ public final class SocialCardApp extends Application
         controller = loader.getController();
 
         stage.setTitle("SocialCard Studio");
+        stage.getIcons().add(new Image(SocialCardApp.class.getResource("socialcard-studio.png").toExternalForm()));
         stage.setMinWidth(840);
         stage.setMinHeight(620);
         stage.setScene(scene);
