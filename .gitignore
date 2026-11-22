@@ -1,4 +1,19 @@
+# Maven output, portable Windows packages, and local JVM logs
 /target/
+/out/
+hs_err_pid*.log
+replay_pid*.log
+
+# IDE settings
 /.idea/
 *.iml
 /.vscode/
+/.settings/
+/.classpath
+/.project
+/bin/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

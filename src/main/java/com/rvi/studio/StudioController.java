@@ -1,33 +1,48 @@
 package com.rvi.studio;
 
-import com.rvi.application.IReaderListener;
 import com.rvi.application.ReaderMonitor;
-import com.rvi.application.TlvEncoder;
-import com.rvi.application.creator.NDefMessageCreator;
-import com.rvi.domain.*;
+import com.rvi.domain.NDefContent;
+import com.rvi.domain.NDefMessage;
+import com.rvi.service.IReaderService;
 import com.rvi.service.ReaderService;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
-import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.ProgressBar;
 
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.TerminalFactory;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
-public final class StudioController {
+public final class StudioController
+{
+    static final ButtonType CANCEL = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
     private static final int REFERENCE_CAPACITY = 496;
+    private static final int MAX_DRAFT_RECORDS = 504;
     private static final PseudoClass OVER_CAPACITY = PseudoClass.getPseudoClass("over-capacity");
+
     private final ExecutorService worker = Executors.newSingleThreadExecutor(
             Thread.ofPlatform().daemon().name("socialcard-io").factory());
+    private final ExecutorService encodingWorker = Executors.newSingleThreadExecutor(
+            Thread.ofPlatform().daemon().name("socialcard-encoding").factory());
+    private final DraftEncoder draftEncoder = new DraftEncoder();
+    private final NfcTagAccess tagAccess = new NfcTagAccess(PcscTagConnection::open);
 
-    @FXML private ComboBox<RecordEditor.Kind> recordType;
+    @FXML private ComboBox<RecordKind> recordType;
     @FXML private ListView<NDefContent> records;
     @FXML private Button addButton;
     @FXML private Button editButton;
@@ -49,266 +64,478 @@ public final class StudioController {
     private boolean refreshingReaders;
     private boolean cardPresent;
     private boolean closed;
+    private List<NDefContent> savedRecords = List.of();
+    private Future<?> encodingJob;
+    private long draftRevision;
     private NDefMessage draft;
 
     @FXML
-    private void initialize() {
-        recordType.getItems().setAll(RecordEditor.Kind.values());
+    private void initialize()
+    {
+        recordType.getItems().setAll(RecordKind.values());
         recordType.getSelectionModel().selectFirst();
-        records.setPlaceholder(new Label("Füge einen Eintrag hinzu oder lies einen NFC-Tag."));
-        records.setCellFactory(list -> new RecordCell());
+
+        records.setPlaceholder(new Label("Add a record or read an NFC tag"));
+        records.setCellFactory(list -> new RecordCell().view());
         records.getItems().addListener((ListChangeListener<NDefContent>) change -> updateDraft());
-        records.getSelectionModel().selectedIndexProperty().addListener((o, old, value) -> updateButtons());
-        readers.valueProperty().addListener((o, old, name) -> {
-            if (!refreshingReaders) {
+        records.getSelectionModel().selectedIndexProperty().addListener(
+                (selection, previousIndex, selectedIndex) -> updateButtons());
+
+        readers.valueProperty().addListener((selectedReader, previousName, name) ->
+        {
+            if (!refreshingReaders)
+            {
                 watchReader(name);
             }
         });
+
         updateDraft();
     }
 
     @FXML
-    void refreshReaders() {
+    void refreshReaders()
+    {
+        final String previous = readers.getValue();
+
         closeMonitor();
-        String previous = readers.getValue();
-        readerStatus.setText("Suche nach PC/SC-Lesern …");
-        run("Leser werden gesucht …", "Lesersuche fehlgeschlagen", ReaderService::listReaders, names -> {
+        readerStatus.setText("Looking for PC/SC readers");
+
+        run("Scanning for readers", "Reader discovery failed", ReaderService::listReaders, names ->
+        {
             refreshingReaders = true;
             readers.getItems().setAll(names);
-            readers.setValue(previous != null && names.contains(previous)
-                    ? previous : names.stream().findFirst().orElse(null));
+
+            if (previous != null && names.contains(previous))
+            {
+                readers.setValue(previous);
+            }
+            else
+            {
+                readers.setValue(names.stream().findFirst().orElse(null));
+            }
+
             refreshingReaders = false;
-            status.setText(names.isEmpty() ? "Schliesse einen PC/SC-NFC-Leser an." : "NFC-Leser verfügbar.");
+
+            if (names.isEmpty())
+            {
+                status.setText("Connect a PC/SC NFC reader");
+            }
+            else
+            {
+                status.setText("NFC reader available");
+            }
+
             watchReader(readers.getValue());
-        }, error -> {
+        }, error ->
+        {
             refreshingReaders = true;
             readers.getItems().clear();
             readers.setValue(null);
             refreshingReaders = false;
-            readerStatus.setText("PC/SC-Lesersuche fehlgeschlagen.");
-            updateButtons();
+            readerStatus.setText("PC/SC reader discovery failed");
         });
     }
 
-    private void watchReader(String name) {
+    private void watchReader(final String name)
+    {
+        final int generation;
+
         closeMonitor();
-        if (name == null) {
-            readerStatus.setText("Kein PC/SC-Leser gefunden.");
+
+        if (name == null)
+        {
+            readerStatus.setText("No PC/SC reader found");
             return;
         }
-        int generation = readerGeneration;
-        readerStatus.setText("Warte auf einen NFC-Tag …");
-        worker.execute(() -> {
-            try {
-                CardTerminal terminal = TerminalFactory.getDefault().terminals().getTerminal(name);
-                if (terminal == null) {
-                    throw new IllegalStateException("Der Leser ist nicht mehr verbunden.");
+
+        generation = readerGeneration;
+        readerStatus.setText("Waiting for an NFC tag");
+
+        worker.execute(() ->
+        {
+            try
+            {
+                final CardTerminal terminal = TerminalFactory.getDefault().terminals().getTerminal(name);
+
+                if (terminal == null)
+                {
+                    throw new IllegalStateException("The reader was disconnected");
                 }
+
                 onCurrentReader(generation, () -> startMonitor(terminal, generation));
-            } catch (Exception error) {
+            }
+            catch (Exception error)
+            {
                 onCurrentReader(generation, () -> monitorFailed(error));
             }
         });
     }
 
-    private void startMonitor(CardTerminal terminal, int generation) {
-        monitor = new ReaderMonitor(terminal, new IReaderListener() {
-            @Override
-            public void onCardInserted(CardTerminal reader) {
-                onCurrentReader(generation, () -> setCardPresent(true));
-            }
+    private void startMonitor(final CardTerminal terminal, final int generation)
+    {
+        final ReaderStatusListener listener = new ReaderStatusListener(
+                present -> onCurrentReader(generation, () -> setCardPresent(present)),
+                error -> onCurrentReader(generation, () -> monitorFailed(error)));
 
-            @Override
-            public void onCardRemoved(CardTerminal reader) {
-                onCurrentReader(generation, () -> setCardPresent(false));
-            }
-
-            @Override
-            public void onError(Exception error) {
-                onCurrentReader(generation, () -> monitorFailed(error));
-            }
-        });
+        monitor = new ReaderMonitor(terminal, listener);
         monitor.start();
     }
 
-    private void onCurrentReader(int generation, Runnable action) {
-        Platform.runLater(() -> {
-            if (!closed && generation == readerGeneration) {
+    private void onCurrentReader(final int generation, final Runnable action)
+    {
+        Platform.runLater(() ->
+        {
+            if (!closed && generation == readerGeneration)
+            {
                 action.run();
             }
         });
     }
 
-    private void setCardPresent(boolean present) {
+    private void setCardPresent(final boolean present)
+    {
         cardGeneration++;
         cardPresent = present;
-        readerStatus.setText(present ? "NFC-Tag erkannt." : "Warte auf einen NFC-Tag …");
+
+        if (present)
+        {
+            readerStatus.setText("NFC tag detected");
+        }
+        else
+        {
+            readerStatus.setText("Waiting for an NFC tag");
+        }
+
         updateButtons();
     }
 
-    private void monitorFailed(Exception error) {
+    private void monitorFailed(final Exception error)
+    {
         closeMonitor();
-        readerStatus.setText("Leser nicht verfügbar. Suche erneut nach Lesern.");
-        status.setText(errorMessage("Leserfehler", error));
+        readerStatus.setText("Scan again to reconnect the reader");
+        status.setText(errorMessage("Reader error", error));
     }
 
-    private void closeMonitor() {
+    private void closeMonitor()
+    {
         readerGeneration++;
         cardGeneration++;
-        if (monitor != null) {
+
+        if (monitor != null)
+        {
             monitor.close();
             monitor = null;
         }
+
         cardPresent = false;
         updateButtons();
     }
 
     @FXML
-    private void addRecord() {
+    private void addRecord()
+    {
         RecordEditor.show(records.getScene().getWindow(), recordType.getValue(), null)
-                .ifPresent(value -> {
+                .ifPresent(value ->
+                {
                     records.getItems().add(value);
                     records.getSelectionModel().selectLast();
                 });
     }
 
     @FXML
-    private void editRecord() {
-        int index = records.getSelectionModel().getSelectedIndex();
-        if (index >= 0) {
-            NDefContent current = records.getItems().get(index);
-            RecordEditor.show(records.getScene().getWindow(), RecordEditor.kindOf(current), current)
-                    .ifPresent(value -> records.getItems().set(index, value));
+    private void editRecord()
+    {
+        final int index = records.getSelectionModel().getSelectedIndex();
+        final NDefContent current;
+
+        if (index < 0)
+        {
+            return;
         }
+
+        current = records.getItems().get(index);
+        RecordEditor.show(records.getScene().getWindow(), RecordKind.fromContent(current), current)
+                .ifPresent(value -> records.getItems().set(index, value));
     }
 
     @FXML
-    private void removeRecord() {
-        int index = records.getSelectionModel().getSelectedIndex();
-        if (index >= 0) {
+    private void removeRecord()
+    {
+        final int index = records.getSelectionModel().getSelectedIndex();
+
+        if (index >= 0)
+        {
             records.getItems().remove(index);
         }
     }
 
-    private void updateDraft() {
-        int count = records.getItems().size();
-        entryCount.setText(count == 1 ? "1 Eintrag" : count + " Einträge");
+    private void updateDraft()
+    {
+        final List<NDefContent> snapshot = List.copyOf(records.getItems());
+        final int count = snapshot.size();
+        final long revision = ++draftRevision;
+
+        if (encodingJob != null)
+        {
+            encodingJob.cancel(false);
+            encodingJob = null;
+        }
+
+        if (count == 1)
+        {
+            entryCount.setText("1 record");
+        }
+        else
+        {
+            entryCount.setText(count + " records");
+        }
+
         draft = null;
         byteCount.getStyleClass().remove("error-text");
         capacityBar.pseudoClassStateChanged(OVER_CAPACITY, false);
-        try {
-            int bytes = 0;
-            if (count > 0) {
-                var creator = new NDefMessageCreator();
-                records.getItems().forEach(creator::add);
-                var message = creator.build();
-                bytes = new TlvEncoder().encode(message).length;
-                draft = message;
-            }
-            byteCount.setText(bytes + " / " + REFERENCE_CAPACITY + " Bytes");
-            capacityBar.setProgress(Math.min(1, (double) bytes / REFERENCE_CAPACITY));
-            capacityBar.pseudoClassStateChanged(OVER_CAPACITY, bytes > REFERENCE_CAPACITY);
-            if (bytes > REFERENCE_CAPACITY) {
-                byteCount.getStyleClass().add("error-text");
-            }
-        } catch (RuntimeException error) {
-            byteCount.setText("Grösse nicht verfügbar");
-            capacityBar.setProgress(0);
-            status.setText(errorMessage("Entwurf konnte nicht codiert werden", error));
+        capacityBar.setProgress(0);
+
+        if (snapshot.isEmpty())
+        {
+            byteCount.setText("0 / " + REFERENCE_CAPACITY + " Bytes");
+            updateButtons();
+            return;
         }
+
+        byteCount.setText("Calculating size");
+        updateButtons();
+        encodingJob = encodingWorker.submit(() -> encodeDraft(snapshot, revision));
+    }
+
+    private void encodeDraft(final List<NDefContent> snapshot, final long revision)
+    {
+        final DraftEncoding encoded;
+
+        try
+        {
+            encoded = draftEncoder.encode(snapshot);
+        }
+        catch (final RuntimeException error)
+        {
+            Platform.runLater(() ->
+            {
+                if (closed || revision != draftRevision)
+                {
+                    return;
+                }
+
+                encodingJob = null;
+                byteCount.setText("Size unavailable");
+                status.setText(errorMessage("Could not encode the draft", error));
+            });
+            return;
+        }
+
+        Platform.runLater(() -> showDraftEncoding(encoded, revision));
+    }
+
+    private void showDraftEncoding(final DraftEncoding encoded, final long revision)
+    {
+        final int bytes = encoded.bytes();
+
+        if (closed || revision != draftRevision)
+        {
+            return;
+        }
+
+        encodingJob = null;
+        final boolean overCapacity = bytes > REFERENCE_CAPACITY;
+        draft = overCapacity ? null : encoded.message();
+        byteCount.setText(bytes + " / " + REFERENCE_CAPACITY + " Bytes");
+        capacityBar.setProgress(Math.min(1, (double) bytes / REFERENCE_CAPACITY));
+        capacityBar.pseudoClassStateChanged(OVER_CAPACITY, overCapacity);
+
+        if (overCapacity)
+        {
+            byteCount.getStyleClass().add("error-text");
+        }
+
         updateButtons();
     }
 
     @FXML
-    private void readTag() {
-        if (!records.getItems().isEmpty() && !confirm("Entwurf ersetzen?",
-                "Beim Lesen werden die Einträge im Editor durch den Tag-Inhalt ersetzt.", "Tag lesen")) {
+    private void readTag()
+    {
+        final String readerName;
+
+        if (!records.getItems().isEmpty() && !confirm("Replace draft",
+                "Reading the tag will replace the records in the editor", "Read tag"))
+        {
             return;
         }
-        if (readButton.isDisabled()) {
+
+        if (readButton.isDisabled())
+        {
             return;
         }
-        String name = readers.getValue();
-        run("Tag wird gelesen …", "Lesen fehlgeschlagen", () -> {
-            try (var service = ReaderService.create(name)) {
+
+        readerName = readers.getValue();
+
+        run("Reading tag", "Read failed", () ->
+        {
+            try (final IReaderService service = ReaderService.create(readerName))
+            {
                 service.connect();
                 return service.readContents();
             }
-        }, values -> {
-            records.getItems().setAll(values);
-            status.setText("Tag gelesen. " + entryCount.getText() + " geladen.");
+        }, values ->
+        {
+            savedRecords = List.copyOf(values);
+            records.getItems().setAll(savedRecords);
+            status.setText("Tag records loaded into the editor");
         }, error -> {});
     }
 
     @FXML
-    private void writeTag() {
-        var data = draft;
-        int confirmedCard = cardGeneration;
-        if (data == null || writeButton.isDisabled() || !confirm("Tag überschreiben?",
-                "Der aktuelle Inhalt des Tags wird ersetzt. Lass den Tag bis zur Bestätigung auf dem Leser.",
-                "Auf Tag schreiben")) {
+    private void writeTag()
+    {
+        final NDefMessage data = draft;
+        final int confirmedCard = cardGeneration;
+        final String readerName = readers.getValue();
+        final List<NDefContent> snapshot = List.copyOf(records.getItems());
+
+        if (data == null || writeButton.isDisabled())
+        {
             return;
         }
-        if (confirmedCard != cardGeneration) {
-            status.setText("Der Tag hat sich geändert. Starte den Schreibvorgang erneut.");
-            return;
-        }
-        String name = readers.getValue();
-        run("Tag wird beschrieben und geprüft …", "Schreiben fehlgeschlagen", () -> {
-            try (var service = ReaderService.create(name)) {
-                service.connect();
-                service.write(data);
-                return null;
-            }
-        }, ignored -> status.setText("Tag erfolgreich beschrieben und geprüft."), error -> {});
+
+        run("Identifying tag", "Could not identify the tag", () -> tagAccess.identify(readerName),
+                tagId -> confirmWrite(readerName, tagId, confirmedCard, snapshot, data), error -> {});
     }
 
-    private boolean confirm(String title, String message, String action) {
-        var proceed = new ButtonType(action, ButtonBar.ButtonData.OK_DONE);
-        var dialog = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.CANCEL, proceed);
+    private void confirmWrite(final String readerName, final String tagId, final int confirmedCard,
+                              final List<NDefContent> snapshot, final NDefMessage data)
+    {
+        if (!cardPresent || confirmedCard != cardGeneration)
+        {
+            status.setText("Start the write again to use the new tag");
+            return;
+        }
+
+        status.setText("Tag ready to write");
+
+        if (!confirm("Overwrite tag",
+                "Keep the tag on the reader while its contents are replaced and verified",
+                "Write to tag"))
+        {
+            return;
+        }
+
+        if (confirmedCard != cardGeneration)
+        {
+            status.setText("Start the write again to use the new tag");
+            return;
+        }
+
+        run("Writing and verifying tag", "Write failed", () ->
+        {
+            tagAccess.write(readerName, tagId, data);
+            return null;
+        }, ignored ->
+        {
+            savedRecords = snapshot;
+            status.setText("Tag written and verified");
+        }, error -> {});
+    }
+
+    private boolean confirm(final String title, final String message, final String action)
+    {
+        final ButtonType proceed = new ButtonType(action, ButtonBar.ButtonData.OK_DONE);
+        final Alert dialog = new Alert(Alert.AlertType.CONFIRMATION, message, CANCEL, proceed);
+        final Button cancel = (Button) dialog.getDialogPane().lookupButton(CANCEL);
+        final Button confirm = (Button) dialog.getDialogPane().lookupButton(proceed);
+
         dialog.initOwner(records.getScene().getWindow());
         dialog.setTitle("SocialCard Studio");
         dialog.setHeaderText(title);
         RecordEditor.style(dialog.getDialogPane());
-        var cancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
-        ((Button) dialog.getDialogPane().lookupButton(proceed)).setDefaultButton(false);
+
+        confirm.setDefaultButton(false);
         cancel.setDefaultButton(true);
+
         return dialog.showAndWait().filter(proceed::equals).isPresent();
     }
 
-    private <T> void run(String progress, String errorTitle, Callable<T> work,
-                         Consumer<T> success, Consumer<Throwable> failure) {
+    private <T> void run(final String progress, final String errorTitle, final Callable<T> work,
+                         final Consumer<T> success, final Consumer<Throwable> failure)
+    {
         busy = true;
         status.setText(progress);
         updateButtons();
-        var task = new Task<T>() {
-            @Override
-            protected T call() throws Exception {
-                return work.call();
+
+        worker.execute(() ->
+        {
+            final T result;
+
+            try
+            {
+                result = work.call();
             }
-        };
-        task.setOnSucceeded(event -> {
-            busy = false;
-            success.accept(task.getValue());
-            updateButtons();
+            catch (final Throwable error)
+            {
+                Platform.runLater(() ->
+                {
+                    if (closed)
+                    {
+                        return;
+                    }
+
+                    busy = false;
+                    status.setText(errorMessage(errorTitle, error));
+                    try
+                    {
+                        failure.accept(error);
+                    }
+                    finally
+                    {
+                        updateButtons();
+                    }
+                });
+                return;
+            }
+
+            Platform.runLater(() ->
+            {
+                if (closed)
+                {
+                    return;
+                }
+
+                busy = false;
+                try
+                {
+                    success.accept(result);
+                }
+                finally
+                {
+                    updateButtons();
+                }
+            });
         });
-        task.setOnFailed(event -> {
-            busy = false;
-            status.setText(errorMessage(errorTitle, task.getException()));
-            failure.accept(task.getException());
-            updateButtons();
-        });
-        worker.execute(task);
     }
 
-    static String errorMessage(String title, Throwable error) {
-        String detail = error.getMessage();
-        return detail == null || detail.isBlank() ? title + "." : title + " · " + detail;
+    static String errorMessage(final String title, final Throwable error)
+    {
+        final String detail = error.getMessage();
+
+        if (detail == null || detail.isBlank())
+        {
+            return title;
+        }
+
+        return title + "\n" + detail;
     }
 
-    private void updateButtons() {
-        boolean noSelection = records.getSelectionModel().isEmpty();
-        addButton.setDisable(busy);
+    private void updateButtons()
+    {
+        final boolean noSelection = records.getSelectionModel().isEmpty();
+
+        addButton.setDisable(busy || records.getItems().size() >= MAX_DRAFT_RECORDS);
         editButton.setDisable(busy || noSelection);
         removeButton.setDisable(busy || noSelection);
         recordType.setDisable(busy);
@@ -318,45 +545,26 @@ public final class StudioController {
         writeButton.setDisable(busy || !cardPresent || draft == null);
     }
 
-    boolean isBusy() {
+    boolean isBusy()
+    {
         return busy;
     }
 
-    void close() {
-        closed = true;
-        closeMonitor();
-        worker.shutdownNow();
+    boolean confirmDiscardDraft()
+    {
+        if (records.getItems().equals(savedRecords))
+        {
+            return true;
+        }
+
+        return confirm("Discard draft", "Changes to the draft will be lost", "Discard");
     }
 
-    private static final class RecordCell extends ListCell<NDefContent> {
-        private final Label type = new Label();
-        private final Label detail = new Label();
-        private final VBox row = new VBox(3, type, detail);
-
-        private RecordCell() {
-            type.getStyleClass().add("record-type");
-            detail.getStyleClass().add("record-detail");
-            detail.setMaxWidth(Double.MAX_VALUE);
-            row.prefWidthProperty().bind(widthProperty().subtract(36));
-        }
-
-        @Override
-        protected void updateItem(NDefContent item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty || item == null) {
-                setGraphic(null);
-                setAccessibleText(null);
-                return;
-            }
-            type.setText(RecordEditor.kindOf(item).toString());
-            detail.setText(switch (item) {
-                case NDefUri uri -> uri.uri();
-                case NDefText text -> text.text().lines().findFirst().orElse("");
-                case NDefContact contact -> (contact.firstName() + " " + contact.lastName()).strip();
-                case NDefWifi wifi -> wifi.ssid();
-            });
-            setGraphic(row);
-            setAccessibleText(type.getText() + ", " + detail.getText());
-        }
+    void close()
+    {
+        closed = true;
+        closeMonitor();
+        encodingWorker.shutdownNow();
+        worker.shutdownNow();
     }
 }

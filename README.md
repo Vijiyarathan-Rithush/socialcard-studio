@@ -1,30 +1,59 @@
 # SocialCard Studio
 
-JavaFX-Desktop-App zum Zusammenstellen, Lesen und Schreiben von NDEF-Nachrichten
-auf NTAG215-Tags. Die App verwendet [SocialCard 0.1.1](https://central.sonatype.com/artifact/io.github.vijiyarathan-rithush/socialcard)
-für die NDEF-Codierung, den Zugriff auf den PC/SC-Leser und die Prüfung nach dem Schreiben.
+A JavaFX desktop app for composing, reading, and writing NDEF messages on NTAG215 tags.
+It uses [SocialCard 1.0.3](https://central.sonatype.com/artifact/io.github.vijiyarathan-rithush/socialcard/1.0.3)
+for NDEF encoding, PC/SC reader access, and write verification.
 
-## Starten
+## Run on Windows
 
-Du brauchst JDK 25 und Maven. Falls Maven ein anderes JDK verwendet, setze
-`JAVA_HOME` auf dein JDK-25-Verzeichnis und prüfe es mit `mvn -version`.
+From a GitHub release, download `socialcard-studio-windows-x64.zip`, extract it
+and open `SocialCard Studio.exe` inside the `SocialCard Studio` folder. Keep
+the entire folder together. The package includes its Java runtime.
+
+For NFC operations, connect a PC/SC-compatible reader and use an NTAG215 tag.
+
+## Run from source
+
+Install JDK 25 and Maven. If Maven uses a different JDK, set `JAVA_HOME` to
+your JDK 25 directory and check it with `mvn -version`.
 
 ```sh
 mvn javafx:run
 ```
 
-## Einen Tag vorbereiten
+## Build a Windows executable
 
-1. Wähle einen Typ aus und füge Links, Texte, Kontakte oder WLAN-Daten hinzu.
-2. Prüfe die Datenmenge unter **Tag-Speicher**. Die Vorschau lässt sich ohne Hardware verwenden.
-3. Schliess einen PC/SC-NFC-Leser an, klicke auf **Leser suchen** und lege einen beschreibbaren NTAG215 auf.
-4. Klicke auf **Auf Tag schreiben** und bestätige das Ersetzen des Tag-Inhalts. **Tag lesen** lädt unterstützte Inhalte zurück in den Editor.
+Build the portable application on x64 Windows with JDK 25 and Maven.
 
-Die Einträge im Editor liegen im Arbeitsspeicher. WLAN-Zugangsdaten auf einem Tag
-sind auslesbar. Der Leser benötigt einen PC/SC-kompatiblen Treiber.
+```powershell
+mvn -Pwindows-exe clean package
+```
 
-## Layout und Farben
+Open `target/SocialCard Studio/SocialCard Studio.exe` to start the app.
 
-`studio.fxml` enthält das Layout und lässt sich mit Scene Builder öffnen.
-In `theme.css` stehen die Farbwerte an einer Stelle. Cream ist die Arbeitsfläche,
-Deep Teal trägt die Kopfzeile und Orange markiert die Schreibaktion.
+Share the entire `SocialCard Studio` folder so the launcher can find the bundled
+Java runtime and dependencies. Recipients can run it without installing Java
+or Maven. The build creates a portable application folder and works without WiX.
+
+## Verify
+
+Run `mvn verify` to compile the application and run its tests. GitHub Actions
+verifies the build on Linux and Windows and provides the Windows ZIP as a
+workflow artifact.
+
+## Prepare a tag
+
+1. Choose a record type and add links, text, contacts, or Wi-Fi credentials.
+2. Check the size under **Tag storage**. The size preview works without a reader.
+   Shorten the draft if it exceeds 496 bytes to enable writing.
+3. Connect a PC/SC NFC reader, click **Scan for readers**, and place a writable NTAG215 tag on it.
+4. Click **Write to tag** and confirm. **Read tag** loads supported records into the editor.
+
+The editor keeps drafts in memory and asks before discarding changes. Anyone who
+scans a tag can read its Wi-Fi credentials. The NFC reader requires a
+PC/SC-compatible driver and must support reading the NTAG215 UID for writes.
+
+## Layout and colors
+
+Open `studio.fxml` in Scene Builder to edit the layout. Change the palette in
+`theme.css`. Warm charcoal surfaces sit on a black background. Orange highlights the write button and keyboard focus.

@@ -1,0 +1,41 @@
+name: Verify
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Test and analyze dependencies
+        run: mvn -B -ntp verify dependency:analyze-only
+      - name: Package Windows executable
+        if: runner.os == 'Windows'
+        run: mvn -B -ntp -Pwindows-exe clean package
+      - name: Archive the portable Windows app
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $app = (Resolve-Path -LiteralPath 'target/SocialCard Studio').Path
+          $zip = Join-Path $PWD 'target/socialcard-studio-windows-x64.zip'
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($app, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $true)
+      - name: Upload Windows ZIP
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          path: target/socialcard-studio-windows-x64.zip
+          archive: false
+          if-no-files-found: error

@@ -1,185 +1,242 @@
-.root {
-    -studio-cream: #faf0de;
-    -studio-teal: #0b4a46;
-    -studio-orange: #ff9c57;
-    -studio-ink: #173e39;
-    -studio-muted: #47635b;
-    -studio-paper: #fffaf1;
-    -studio-border: #d8d6c4;
-    -studio-soft-teal: #e4ebe0;
-    -studio-error: #973b2c;
+.root
+{
+    -studio-background: #000000;
+    -studio-surface: #1c1b1a;
+    -studio-panel: #242220;
+    -studio-field: #181716;
+    -studio-hover: #302d2a;
+    -studio-selection: #272625;
+    -studio-text: #f5f5f5;
+    -studio-muted: #ababab;
+    -studio-border: #48423d;
+    -studio-control-border: #776e66;
+    -studio-accent: #ff743d;
+    -studio-accent-hover: #ff9468;
+    -studio-accent-surface: #302119;
+    -studio-error: #ff8a8a;
     -fx-font-family: "Segoe UI";
     -fx-font-size: 14px;
-    -fx-background-color: -studio-cream;
-    -fx-accent: -studio-teal;
-    -fx-focus-color: -studio-teal;
+    -fx-base: -studio-surface;
+    -fx-background: -studio-background;
+    -fx-background-color: -studio-background;
+    -fx-control-inner-background: -studio-surface;
+    -fx-text-background-color: -studio-text;
+    -fx-accent: -studio-accent;
+    -fx-focus-color: -studio-accent;
     -fx-faint-focus-color: transparent;
-    -fx-text-background-color: -studio-ink;
 }
 
-.label, .check-box {
-    -fx-text-fill: -studio-ink;
+.label, .check-box
+{
+    -fx-text-fill: -studio-text;
 }
 
-.masthead {
-    -fx-background-color: -studio-teal;
-}
-
-.brand-mark {
-    -fx-min-width: 38px;
-    -fx-min-height: 38px;
-    -fx-background-radius: 10px;
-    -fx-background-color: #21625b;
-}
-
-.brand-mark .label, .wordmark, .device-label {
-    -fx-text-fill: -studio-cream;
-}
-
-.brand-mark .label, .wordmark {
+.page-title
+{
+    -fx-font-size: 36px;
     -fx-font-weight: bold;
 }
 
-.wordmark {
-    -fx-font-size: 19px;
-}
-
-.device-label, .record-type, .muted {
+.muted, .record-type, .list-view .placeholder .label, .statusbar .label
+{
+    -fx-text-fill: -studio-muted;
     -fx-font-size: 13px;
 }
 
-.page-title {
-    -fx-font-family: Georgia;
-    -fx-font-size: 38px;
-    -fx-text-fill: -studio-teal;
-}
-
-.muted, .record-type, .statusbar .label {
-    -fx-text-fill: -studio-muted;
-}
-
-.panel, .list-view {
-    -fx-background-color: -studio-paper;
-    -fx-background-radius: 13px;
-    -fx-border-color: -studio-border;
-    -fx-border-radius: 13px;
-}
-
-.panel {
-    -fx-padding: 17px;
-}
-
-.panel-title, .record-detail, .storage-count {
-    -fx-font-weight: bold;
-}
-
-.panel-title {
-    -fx-font-size: 17px;
-}
-
-.storage-count {
-    -fx-font-size: 25px;
-}
-
-.button, .combo-box-base, .text-input {
-    -fx-background-color: -studio-paper;
+.panel, .list-view, .combo-box-popup .list-view
+{
+    -fx-background-color: -studio-surface;
     -fx-background-radius: 8px;
     -fx-border-color: -studio-border;
     -fx-border-radius: 8px;
+}
+
+.panel
+{
+    -fx-background-color: -studio-panel;
+    -fx-padding: 16px;
+}
+
+.panel-title, .record-detail, .storage-count
+{
+    -fx-font-weight: bold;
+}
+
+.panel-title
+{
+    -fx-font-size: 16px;
+}
+
+.storage-count
+{
+    -fx-font-family: "Consolas";
+    -fx-font-size: 22px;
+}
+
+.button, .combo-box-base, .text-input
+{
+    -fx-background-color: -studio-field;
+    -fx-background-radius: 6px;
+    -fx-border-color: -studio-control-border;
+    -fx-border-radius: 6px;
     -fx-padding: 8px 12px;
-    -fx-text-fill: -studio-ink;
+    -fx-text-fill: -studio-text;
+    -fx-prompt-text-fill: -studio-muted;
 }
 
-.text-area .content {
-    -fx-background-color: -studio-paper;
+.combo-box-base
+{
+    -fx-padding: 0 3px;
 }
 
-.button {
+.combo-box > .list-cell, .combo-box-popup .list-cell
+{
+    -fx-background-color: transparent;
+    -fx-text-fill: -studio-text;
+    -fx-padding: 8px 9px;
+}
+
+.combo-box .arrow
+{
+    -fx-background-color: -studio-muted;
+}
+
+.text-area .content
+{
+    -fx-background-color: -studio-field;
+}
+
+.text-input
+{
+    -fx-highlight-fill: -studio-accent;
+    -fx-highlight-text-fill: -studio-background;
+}
+
+.button
+{
     -fx-font-weight: bold;
     -fx-cursor: hand;
 }
 
-.button:hover, .combo-box-base:hover {
-    -fx-background-color: -studio-soft-teal;
+.button:hover, .combo-box-base:hover
+{
+    -fx-background-color: -studio-hover;
 }
 
-.button:focused, .combo-box-base:focused, .text-input:focused, .list-view:focused {
-    -fx-border-color: -studio-teal;
+.button:focused, .combo-box-base:focused, .text-input:focused, .list-view:focused
+{
+    -fx-border-color: -studio-accent;
 }
 
-.button.primary-action {
-    -fx-background-color: -studio-orange;
+.button:disabled, .combo-box-base:disabled
+{
+    -fx-opacity: 0.55;
+}
+
+.button.primary-action
+{
+    -fx-background-color: -studio-accent;
     -fx-border-color: transparent;
-    -fx-text-fill: -studio-ink;
+    -fx-text-fill: -studio-background;
 }
 
-.button.primary-action:hover {
-    -fx-background-color: #ffab70;
+.button.primary-action:hover
+{
+    -fx-background-color: -studio-accent-hover;
 }
 
-.button.primary-action:focused {
-    -fx-border-color: -studio-teal;
+.button.primary-action:focused
+{
+    -fx-border-color: -studio-text;
 }
 
-.button.primary-action:disabled {
-    -fx-background-color: #f7d7b5;
-    -fx-text-fill: #695647;
+.button.primary-action:disabled
+{
+    -fx-background-color: -studio-accent-surface;
+    -fx-border-color: #634132;
+    -fx-text-fill: #d4a894;
     -fx-opacity: 1;
 }
 
-.list-view {
-    -fx-padding: 8px;
+.list-view
+{
+    -fx-padding: 6px;
 }
 
-.list-view .list-cell {
+.list-view .list-cell
+{
     -fx-background-color: transparent;
-    -fx-background-radius: 7px;
+    -fx-background-radius: 5px;
+    -fx-text-fill: -studio-text;
     -fx-padding: 10px;
 }
 
-.list-view .list-cell:filled:selected, .list-view .list-cell:filled:hover {
-    -fx-background-color: -studio-soft-teal;
+.list-view .list-cell:filled:hover
+{
+    -fx-background-color: -studio-hover;
 }
 
-.progress-bar {
-    -fx-pref-height: 10px;
+.list-view .list-cell:filled:selected
+{
+    -fx-background-color: -studio-selection;
 }
 
-.progress-bar .track {
-    -fx-background-color: -studio-soft-teal;
-    -fx-background-radius: 5px;
+#records .list-cell
+{
+    -fx-border-width: 0 0 0 2px;
+    -fx-border-color: transparent;
+    -fx-border-insets: 8px 0;
+    -fx-padding: 2px 10px 2px 8px;
 }
 
-.progress-bar .bar {
-    -fx-background-color: -studio-teal;
-    -fx-background-radius: 5px;
+#records .list-cell:filled:selected
+{
+    -fx-border-color: -studio-accent;
+}
+
+.progress-bar
+{
+    -fx-pref-height: 6px;
+}
+
+.progress-bar .track
+{
+    -fx-background-color: -studio-border;
+    -fx-background-radius: 3px;
+}
+
+.progress-bar .bar
+{
+    -fx-background-color: -studio-accent;
+    -fx-background-radius: 3px;
     -fx-background-insets: 0;
 }
 
-.progress-bar:over-capacity .bar {
+.progress-bar:over-capacity .bar
+{
     -fx-background-color: -studio-error;
 }
 
-.error-text {
+.error-text
+{
     -fx-text-fill: -studio-error;
 }
 
-.statusbar {
-    -fx-padding: 11px 30px;
-    -fx-background-color: -studio-paper;
+.statusbar
+{
+    -fx-padding: 9px 28px;
+    -fx-background-color: -studio-background;
     -fx-border-width: 1px 0 0 0;
     -fx-border-color: -studio-border;
-    -fx-min-height: 43px;
+    -fx-min-height: 38px;
 }
 
-.dialog-pane, .dialog-pane .scroll-pane, .dialog-pane .scroll-pane .viewport {
-    -fx-background-color: -studio-cream;
+.dialog-pane, .dialog-pane .scroll-pane, .dialog-pane .scroll-pane .viewport
+{
+    -fx-background-color: -studio-background;
 }
 
-.dialog-pane .header-panel {
-    -fx-background-color: -studio-teal;
-}
-
-.dialog-pane .header-panel .label {
-    -fx-text-fill: -studio-cream;
+.dialog-pane .header-panel
+{
+    -fx-background-color: -studio-surface;
 }
