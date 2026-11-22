@@ -13,7 +13,9 @@ A JavaFX desktop app for composing, reading and writing NFC tags with [SocialCar
 
 ## App preview
 
-![SocialCard Studio showing two NDEF records, the selected NFC reader, storage usage and the orange Write to tag button](docs/media/socialcard-studio.png)
+[![SocialCard Studio showing two NDEF records, the selected NFC reader, storage usage and the orange Write to tag button](docs/media/socialcard-studio.png)](docs/media/socialcard-studio-demo.mp4?raw=true)
+
+[Watch the 21-second demo](docs/media/socialcard-studio-demo.mp4?raw=true). It shows how to add a link and check the draft size in Studio.
 
 ## What it does
 
