@@ -55,6 +55,10 @@ mvn -Pwindows-exe clean package
 
 The launcher is at `target/SocialCard Studio/SocialCard Studio.exe`. The portable build does not require WiX. The [Verify workflow](https://github.com/Vijiyarathan-Rithush/socialcard-studio/actions/workflows/verify.yml) checks Linux and Windows builds and uploads the portable Windows ZIP.
 
+## Built with SocialCard
+
+Studio uses the SocialCard Java library for NDEF encoding and NFC reader communication. See the [SocialCard Java library docs](https://docs.rithush.dev/socialcard/) for installation, Java examples and the API reference.
+
 ## Layout and colors
 
 The layout lives in [`studio.fxml`](src/main/resources/com/rvi/studio/studio.fxml) and can be edited in Scene Builder. The charcoal surfaces and orange accents are defined in [`theme.css`](src/main/resources/com/rvi/studio/theme.css).
